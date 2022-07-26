@@ -23,7 +23,7 @@ import shlex
 
 import subprocess
 
-from pyxray import XrayScannerError, XrayScannerTimeout
+from .exceptions import XrayScannerError, XrayScannerTimeout
 
 
 __author__ = "Tony_9410 (tony_9410@foxmail.com)"
