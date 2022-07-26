@@ -1,2 +1,2 @@
-# py-xray
+# python-xray
 python client for chaitin‘s xray
