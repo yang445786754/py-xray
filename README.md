@@ -1,6 +1,6 @@
 # python-xray
 
-A python 3 library witch helps in using chaitin's community xray web scanner. This tool convert command line into python functions. 
+A python 3 library which helps in using chaitin's community xray web scanner. This tool convert command line into python functions. 
 
 For example in xray if you want to scan for url `http://xxx.xx/` you would to something like this
 ```bash
