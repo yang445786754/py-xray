@@ -10,6 +10,11 @@ For example in xray if you want to scan for url `http://xxx.xx/` you would to so
 But in this python-xray script you would do something like this
 ```python
 import pyxray
-xray = pyxray.XrayWebScanner()
-xray.webscan(urls=['http://xxx.xx/'])
+
+# xray = pyxray.XrayWebScanner(['/path/to/your/xray-software-dir/xray_linux_amd64'])
+xray = pyxray.XrayWebScanner()  # default: find it from your PATH
+res = xray.webscan(xray_search_path=['http://xxx.xx/'])
+
+print(res)
 ```
+> NOTE: xray_search_path must be an iterable object
