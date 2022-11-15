@@ -20,6 +20,7 @@ import re
 import sys
 import uuid
 import shlex
+import copy
 
 import subprocess
 
@@ -203,6 +204,114 @@ class XrayWebScanner:
             xray_err_keep_trace=xray_err_keep_trace,
             xray_warn_keep_trace=xray_warn_keep_trace,
         )
+
+    def webscan_with_crawler(self, urls=[], arguments="", timeout=0):
+        if isinstance(urls, list):
+            urls = [x.strip() for x in urls]
+        elif isinstance(urls, str):
+            urls = shlex.split(urls)
+        else:
+            raise XrayScannerError('url 参数异常')
+
+        # set configs
+        config_args = ['--config', self._xray_config_path]
+
+        f_args = shlex.split(arguments)
+
+        xray_err_keep_trace = []
+        xray_warn_keep_trace = []
+
+        scan_results_ = []
+
+        # excute scan
+        for url in urls:
+            args = (
+                [self._xray_path]
+                + config_args
+                + ['webscan']
+                + f_args
+                + ['--basic-crawler', url]
+                + ['--json-output', self.results_path]
+            )
+            self._xray_last_command_line = shlex.join(args)
+
+            p = subprocess.Popen(
+                args,
+                bufsize=100000,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            # wait until finished
+            # get output
+            # Terminate after user timeout
+            if timeout == 0:
+                (self._xray_last_output, xray_err) = p.communicate()
+            else:
+                try:
+                    (self._xray_last_output, xray_err) = p.communicate(
+                        timeout=timeout)
+                except subprocess.TimeoutExpired:
+                    p.kill()
+                    raise XrayScannerTimeout("Timeout from xray process")
+
+            xray_err = bytes.decode(xray_err)
+
+            if len(xray_err) > 0:
+                regex_warning = re.compile("^[WARN] .*", re.IGNORECASE)
+                for line in xray_err.split(os.linesep):
+                    if len(line) > 0:
+                        rgw = regex_warning.search(line)
+                        if rgw is not None:
+                            xray_warn_keep_trace.append(line + os.linesep)
+                        else:
+                            xray_err_keep_trace.append(xray_err)
+
+            scan_results_.append(self.analyse_xray_json_scan(
+                xray_err=xray_err,
+                xray_err_keep_trace=xray_err_keep_trace,
+                xray_warn_keep_trace=xray_warn_keep_trace,
+            ))
+        
+        return self._merge_scan_results(scan_results_)
+
+    @staticmethod
+    def _merge_scan_results(scan_results):
+        if not scan_results:
+            return None
+
+        result_ = copy.deepcopy(scan_results[0])
+
+        result_['scan']['vulns'] = []
+        result_['xray']['command_line'] = []
+        result_['xray']['scaninfo']['error'] = []
+        result_['xray']['scaninfo']['warning'] = []
+        result_['xray']['scanstats']['is_safe'] = True
+        result_['xray']['scanstats']['total_vulns'] = 0
+
+        for scan_result in scan_results:
+            # merge vulns
+            result_['scan']['vulns'].extend(scan_result['scan']['vulns'])
+
+            # merge state
+            result_['xray']['command_line'].append(
+                scan_result['xray']['command_line'])
+            result_['xray']['scanstats']['total_vulns'] += \
+                scan_result['xray']['scanstats']['total_vulns']
+            result_['xray']['scanstats']['is_safe'] = \
+                result_['xray']['scanstats']['is_safe'] and \
+                    scan_result['xray']['scanstats']['is_safe']
+            
+            bool(scan_result["xray"]["scaninfo"].get("error", None)) and \
+                result_["xray"]["scaninfo"]["error"].append(
+                scan_result["xray"]["scaninfo"].get("error", ""))
+            bool(scan_result["xray"]["scaninfo"].get("warning", None)) and \
+                result_["xray"]["scaninfo"]["warning"].append(
+                scan_result["xray"]["scaninfo"].get("warning", ""))
+
+        return result_
+
 
     def check_xray_finished(self):
         keywords = self._xray_last_output[-31:-1]

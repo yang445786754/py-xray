@@ -14,6 +14,7 @@ import pyxray
 # xray = pyxray.XrayWebScanner(['/path/to/your/xray-software-dir/xray_linux_amd64'])
 xray = pyxray.XrayWebScanner()  # default: find it from your PATH
 res = xray.webscan(xray_search_path=['http://xxx.xx/'])
+res = xray.webscan_with_crawler(xray_search_path=['http://xxx.xx/'])
 
 print(res)
 ```

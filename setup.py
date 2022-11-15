@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="python-xray", 
-    version="0.2.6",
+    version="0.3.0",
     author="Tony_9410",
     author_email="tony_9410@foxmail.com",
     description="Python-xray converts Xray commands into python3 methods making it very easy to use xray in any of your python pentesting projects",
