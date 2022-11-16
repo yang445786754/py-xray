@@ -273,8 +273,14 @@ class XrayWebScanner:
                 xray_err_keep_trace=xray_err_keep_trace,
                 xray_warn_keep_trace=xray_warn_keep_trace,
             ))
+            # clean results file
+            self._remove_results_file()
         
         return self._merge_scan_results(scan_results_)
+
+    def _remove_results_file(self):
+        if os.access(self.results_path, os.F_OK):
+            os.remove(self.results_path)
 
     @staticmethod
     def _merge_scan_results(scan_results):
